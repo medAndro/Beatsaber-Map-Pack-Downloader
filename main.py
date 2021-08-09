@@ -3,6 +3,7 @@ import sys
 import re
 import json
 import base64
+import chardet
 from urllib.request import urlretrieve
 
 #Drag and Drop 처리
@@ -17,7 +18,10 @@ path, ext = os.path.splitext(droppedFile)
 ext = ext.lower()
 
 #Json 열기
-file = open(droppedFile, 'rt', encoding='UTF-8')
+rawdata = open(droppedFile, 'rb').read()
+result = chardet.detect(rawdata)
+charenc = result['encoding']
+file = open(droppedFile, 'rt', encoding=charenc)
 jsonString = json.load(file)
 
 
@@ -35,6 +39,13 @@ if ext == '.json' or ext == '.bplist':
     #플레이리스트의 곡 개수
     songLen = len(jsonString.get('songs'))
 
+    #songName 존재하지 않으면 name으로 파싱
+    if jsonString.get('songs')[0].get('songName') == None:
+        songname = "name"
+    else:
+        songname = "songName"
+
+    print()
     #플레이 리스트 제목 폴더 생성
     createFolder("./"+jsonString.get('playlistTitle'))
 
@@ -52,9 +63,9 @@ if ext == '.json' or ext == '.bplist':
     cnt=0
     for i in jsonString.get('songs'):
         cnt += 1
-        print(str(songLen)+"곡 중 "+str(cnt)+"번째 다운로드 중... "+i.get('songName'))
+        print(str(songLen)+"곡 중 "+str(cnt)+"번째 다운로드 중... "+i.get(songname))
         try:
-            filename = re.sub('[\/:*?"<>|]', '', i.get('songName')) + '.zip'
+            filename = re.sub('[\/:*?"<>|]', '', i.get(songname)) + '.zip'
             urlretrieve("https://cdn.beatsaver.com/"+i.get('hash').lower()+".zip", "./" + jsonString.get('playlistTitle') + "/" + filename)
         except:
             print("https://cdn.beatsaver.com/"+i.get('hash').lower()+".zip")
